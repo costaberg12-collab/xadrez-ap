@@ -1,0 +1,17 @@
+export const palette = {
+  background: '#080B11',
+  surface: '#11161F',
+  surfaceElevated: '#18202D',
+  card: '#151C27',
+  border: '#273142',
+  gold: '#D9B45E',
+  goldSoft: '#9C7B32',
+  neon: '#28F0A1',
+  neonSoft: 'rgba(40,240,161,0.14)',
+  white: '#F7F8FA',
+  text: '#E9EEF7',
+  textMuted: '#93A0B4',
+  danger: '#FF6B6B',
+  dangerSoft: 'rgba(255,107,107,0.14)',
+  warning: '#FFB020',
+};
