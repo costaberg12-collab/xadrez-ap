@@ -166,7 +166,7 @@ export default function TrainingScreen() {
       } else {
         setStatusMessage('Sua vez. Toque em uma peça branca para jogar.');
       }
-    }, 500);
+    }, 100);
   }
 
   function handleSquarePress(square) {
