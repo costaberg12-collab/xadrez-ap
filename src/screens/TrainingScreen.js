@@ -1,10 +1,8 @@
-import React, { useMemo, useState } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Chess } from 'chess.js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenContainer from '../components/ScreenContainer';
 import SectionCard from '../components/SectionCard';
-import { engineLevels, masterProfiles } from '../data/chessProfiles';
 import { palette } from '../theme/palette';
 
 const PIECE_SYMBOLS = {
@@ -14,101 +12,60 @@ const PIECE_SYMBOLS = {
 
 const FILES = ['a','b','c','d','e','f','g','h'];
 
-function sqColor(sq) {
-  const fi = FILES.indexOf(sq[0]);
-  const ri = Number(sq[1]) - 1;
-  return (fi + ri) % 2 === 0 ? 'light' : 'dark';
-}
-
-function normalizeStatus(game, profileLabel) {
-  if (game.isCheckmate()) return game.turn() === 'w' ? `Xeque-mate. ${profileLabel} venceu.` : 'Xeque-mate. Você venceu!';
-  if (game.isDraw()) return 'Partida empatada.';
-  if (game.isCheck()) return game.turn() === 'w' ? 'Seu rei está em xeque!' : `${profileLabel} está em xeque!`;
-  return null;
-}
-
 export default function TrainingScreen() {
+  // Usamos um 'tick' para forçar o React a redesenhar sem perder a instância do Chess
   const [game, setGame] = useState(new Chess());
+  const [tick, setTick] = useState(0); 
   const [selectedSquare, setSelectedSquare] = useState(null);
-  const [levelId, setLevelId] = useState('beginner');
   const [isThinking, setIsThinking] = useState(false);
-  const [moveLog, setMoveLog] = useState([]);
-  const [lastFrom, setLastFrom] = useState(null);
-  const [lastTo, setLastTo] = useState(null);
-  const [statusMessage, setStatusMessage] = useState('Sua vez. Jogue de brancas.');
+  const [lastMove, setLastMove] = useState(null);
+  const [status, setStatus] = useState('Sua vez. Jogue de brancas.');
 
-  const board = useMemo(() => game.board(), [game]);
-  const legalTargets = useMemo(() => {
+  const board = useMemo(() => game.board(), [tick]);
+  const legalMoves = useMemo(() => {
     if (!selectedSquare) return [];
-    try {
-      return game.moves({ square: selectedSquare, verbose: true }).map(m => m.to);
-    } catch (e) { return []; }
-  }, [game, selectedSquare]);
+    return game.moves({ square: selectedSquare, verbose: true }).map(m => m.to);
+  }, [selectedSquare, tick]);
 
-  function resetMatch() {
-    setGame(new Chess());
-    setSelectedSquare(null);
-    setMoveLog([]);
-    setLastFrom(null);
-    setLastTo(null);
-    setIsThinking(false);
-    setStatusMessage('Nova partida. Brancas jogam.');
-  }
+  const forceUpdate = () => setTick(t => t + 1);
 
-  function makeAiMove(currentGame, userSan) {
+  const makeAiMove = (currentGame) => {
     setIsThinking(true);
-    setStatusMessage('Máquina pensando...');
+    setStatus('Máquina está jogando...');
 
-    // Timeout curto para não travar a interface
     setTimeout(() => {
       const moves = currentGame.moves();
-      
       if (moves.length > 0) {
-        // IA Simples: Escolhe um lance aleatório (garante que joga)
         const move = moves[Math.floor(Math.random() * moves.length)];
-        currentGame.move(move);
+        const result = currentGame.move(move);
+        setLastMove({ from: result.from, to: result.to });
         
-        const newGame = new Chess(currentGame.fen());
-        const history = newGame.history({ verbose: true });
-        const lastMove = history[history.length - 1];
-
-        setGame(newGame);
-        setLastFrom(lastMove.from);
-        setLastTo(lastMove.to);
-        setMoveLog(prev => [`V: ${userSan}`, `M: ${lastMove.san}`, ...prev].slice(0, 10));
-        
-        const status = normalizeStatus(newGame, "Máquina");
-        setStatusMessage(status || 'Sua vez.');
+        if (currentGame.isCheckmate()) setStatus('Xeque-mate! A máquina venceu.');
+        else if (currentGame.isDraw()) setStatus('Empate!');
+        else setStatus('Sua vez.');
       }
       setIsThinking(false);
-    }, 200);
-  }
+      forceUpdate();
+    }, 400);
+  };
 
-  function handleSquarePress(square) {
-    if (isThinking || game.isGameOver() || game.turn() !== 'w') return;
+  const handlePress = (square) => {
+    if (isThinking || game.isGameOver()) return;
 
     if (selectedSquare) {
       const move = game.moves({ square: selectedSquare, verbose: true }).find(m => m.to === square);
-      
       if (move) {
-        try {
-          const moveResult = game.move({ from: selectedSquare, to: square, promotion: 'q' });
-          const userSan = moveResult.san;
-          
-          setGame(new Chess(game.fen()));
-          setLastFrom(move.from);
-          setLastTo(move.to);
-          setSelectedSquare(null);
-          
-          if (!game.isGameOver()) {
-            makeAiMove(game, userSan);
-          } else {
-            setStatusMessage(normalizeStatus(game, "Máquina") || "Fim de jogo.");
-          }
-          return;
-        } catch (e) {
-          console.log("Erro ao mover:", e);
+        game.move({ from: selectedSquare, to: square, promotion: 'q' });
+        setLastMove({ from: selectedSquare, to: square });
+        setSelectedSquare(null);
+        forceUpdate();
+
+        if (!game.isGameOver()) {
+          makeAiMove(game);
+        } else {
+          setStatus(game.isCheckmate() ? 'Xeque-mate! Você venceu!' : 'Empate!');
         }
+        return;
       }
     }
 
@@ -118,28 +75,35 @@ export default function TrainingScreen() {
     } else {
       setSelectedSquare(null);
     }
-  }
+  };
 
   return (
-    <ScreenContainer eyebrow="♟️ Treino" title="Humano vs Máquina" subtitle={statusMessage}>
+    <ScreenContainer eyebrow="♟️ Modo Treino" title="Xadrez vs IA" subtitle={status}>
       <SectionCard title="Tabuleiro" icon="🎮">
-        <View style={styles.boardWrap}>
-          <View style={styles.boardRows}>
+        <View style={styles.boardContainer}>
+          <View style={styles.board}>
             {board.map((row, ri) => (
-              <View key={ri} style={styles.rankRow}>
+              <View key={ri} style={styles.row}>
                 {row.map((piece, ci) => {
                   const sq = `${FILES[ci]}${8 - ri}`;
-                  const isLight = sqColor(sq) === 'light';
+                  const isLight = (ri + ci) % 2 === 0;
                   const isSelected = selectedSquare === sq;
-                  const isLegal = legalTargets.includes(sq);
-                  const isLast = lastFrom === sq || lastTo === sq;
+                  const isLegal = legalMoves.includes(sq);
+                  const isHighlight = lastMove?.from === sq || lastMove?.to === sq;
+
                   return (
                     <TouchableOpacity
                       key={sq}
-                      style={[styles.square, isLight ? styles.squareLight : styles.squareDark, isSelected && styles.squareSelected, isLegal && styles.squareLegal, isLast && styles.squareLastMove]}
-                      onPress={() => handleSquarePress(sq)}
+                      style={[
+                        styles.square, 
+                        isLight ? styles.squareLight : styles.squareDark,
+                        isSelected && styles.selected,
+                        isLegal && styles.legal,
+                        isHighlight && styles.highlight
+                      ]}
+                      onPress={() => handlePress(sq)}
                     >
-                      <Text style={[styles.piece, piece?.color === 'b' && styles.pieceDark]}>
+                      <Text style={styles.piece}>
                         {piece ? PIECE_SYMBOLS[`${piece.color}${piece.type}`] : ''}
                       </Text>
                     </TouchableOpacity>
@@ -148,32 +112,29 @@ export default function TrainingScreen() {
               </View>
             ))}
           </View>
+          <TouchableOpacity 
+            style={styles.btn} 
+            onPress={() => { setGame(new Chess()); setLastMove(null); setStatus('Nova partida!'); forceUpdate(); }}
+          >
+            <Text style={styles.btnText}>Reiniciar</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={styles.resetBtn} onPress={resetMatch}>
-          <Text style={styles.resetBtnText}>Reiniciar Partida</Text>
-        </TouchableOpacity>
-      </SectionCard>
-
-      <SectionCard title="Histórico" icon="📝">
-        {moveLog.map((m, i) => <Text key={i} style={styles.logText}>{m}</Text>)}
       </SectionCard>
     </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  boardWrap: { alignItems: 'center', marginVertical: 10 },
-  boardRows: { borderWidth: 2, borderColor: palette.border, borderRadius: 8, overflow: 'hidden' },
-  rankRow: { flexDirection: 'row' },
-  square: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  squareLight: { backgroundColor: '#E5D6AF' },
-  squareDark: { backgroundColor: '#6D5336' },
-  squareSelected: { backgroundColor: '#28F0A1' },
-  squareLegal: { backgroundColor: 'rgba(40,240,161,0.3)' },
-  squareLastMove: { backgroundColor: 'rgba(217,180,94,0.4)' },
-  piece: { fontSize: 28, color: '#000' },
-  pieceDark: { color: '#000' },
-  logText: { color: palette.text, fontSize: 14, marginVertical: 2 },
-  resetBtn: { backgroundColor: palette.gold, padding: 12, borderRadius: 8, marginTop: 15, alignItems: 'center' },
-  resetBtnText: { color: palette.background, fontWeight: '800' }
+  boardContainer: { alignItems: 'center' },
+  board: { borderWidth: 3, borderColor: palette.border, borderRadius: 4 },
+  row: { flexDirection: 'row' },
+  square: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
+  squareLight: { backgroundColor: '#eedab5' },
+  squareDark: { backgroundColor: '#8b5a2b' },
+  selected: { backgroundColor: '#7cfc00' },
+  legal: { backgroundColor: 'rgba(124, 252, 0, 0.4)' },
+  highlight: { backgroundColor: 'rgba(255, 215, 0, 0.5)' },
+  piece: { fontSize: 30, color: '#000' },
+  btn: { marginTop: 20, backgroundColor: palette.gold, padding: 12, borderRadius: 8, width: 200, alignItems: 'center' },
+  btnText: { fontWeight: 'bold', color: '#000' }
 });
