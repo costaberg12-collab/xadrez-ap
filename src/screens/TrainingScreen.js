@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Chess } from 'chess.js';
 import ScreenContainer from '../components/ScreenContainer';
@@ -6,47 +6,45 @@ import SectionCard from '../components/SectionCard';
 import { palette } from '../theme/palette';
 
 const PIECE_SYMBOLS = {
-  wp:'♙',wr:'♖',wn:'♘',wb:'♗',wq:'♕',wk:'♔',
-  bp:'♟',br:'♜',bn:'♞',bb:'♝',bq:'♛',bk:'♚',
+  wp:'♙', wr:'♖', wn:'♘', wb:'♗', wq:'♕', wk:'♔',
+  bp:'♟', br:'♜', bn:'♞', bb:'♝', bq:'♛', bk:'♚',
 };
 
 const FILES = ['a','b','c','d','e','f','g','h'];
 
 export default function TrainingScreen() {
-  // Usamos um 'tick' para forçar o React a redesenhar sem perder a instância do Chess
   const [game, setGame] = useState(new Chess());
   const [tick, setTick] = useState(0); 
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [isThinking, setIsThinking] = useState(false);
   const [lastMove, setLastMove] = useState(null);
-  const [status, setStatus] = useState('Sua vez. Jogue de brancas.');
+  const [status, setStatus] = useState('Toque em uma peça para ver os movimentos.');
 
   const board = useMemo(() => game.board(), [tick]);
+  
+  // Calcula as casas para onde a peça selecionada pode se mover
   const legalMoves = useMemo(() => {
     if (!selectedSquare) return [];
-    return game.moves({ square: selectedSquare, verbose: true }).map(m => m.to);
+    const moves = game.moves({ square: selectedSquare, verbose: true });
+    return moves.map(m => m.to);
   }, [selectedSquare, tick]);
 
   const forceUpdate = () => setTick(t => t + 1);
 
   const makeAiMove = (currentGame) => {
     setIsThinking(true);
-    setStatus('Máquina está jogando...');
-
+    setStatus('Máquina pensando...');
     setTimeout(() => {
       const moves = currentGame.moves();
       if (moves.length > 0) {
         const move = moves[Math.floor(Math.random() * moves.length)];
         const result = currentGame.move(move);
         setLastMove({ from: result.from, to: result.to });
-        
-        if (currentGame.isCheckmate()) setStatus('Xeque-mate! A máquina venceu.');
-        else if (currentGame.isDraw()) setStatus('Empate!');
-        else setStatus('Sua vez.');
+        setStatus(currentGame.isCheckmate() ? 'Fim de jogo: Máquina venceu!' : 'Sua vez.');
       }
       setIsThinking(false);
       forceUpdate();
-    }, 400);
+    }, 600);
   };
 
   const handlePress = (square) => {
@@ -59,12 +57,8 @@ export default function TrainingScreen() {
         setLastMove({ from: selectedSquare, to: square });
         setSelectedSquare(null);
         forceUpdate();
-
-        if (!game.isGameOver()) {
-          makeAiMove(game);
-        } else {
-          setStatus(game.isCheckmate() ? 'Xeque-mate! Você venceu!' : 'Empate!');
-        }
+        if (!game.isGameOver()) makeAiMove(game);
+        else setStatus('Parabéns! Você venceu!');
         return;
       }
     }
@@ -72,14 +66,15 @@ export default function TrainingScreen() {
     const piece = game.get(square);
     if (piece && piece.color === 'w') {
       setSelectedSquare(square);
+      setStatus('Caminhos iluminados em verde.');
     } else {
       setSelectedSquare(null);
     }
   };
 
   return (
-    <ScreenContainer eyebrow="♟️ Modo Treino" title="Xadrez vs IA" subtitle={status}>
-      <SectionCard title="Tabuleiro" icon="🎮">
+    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez Inteligente" subtitle={status}>
+      <SectionCard title="Tabuleiro de Treino" icon="🎮">
         <View style={styles.boardContainer}>
           <View style={styles.board}>
             {board.map((row, ri) => (
@@ -98,12 +93,17 @@ export default function TrainingScreen() {
                         styles.square, 
                         isLight ? styles.squareLight : styles.squareDark,
                         isSelected && styles.selected,
-                        isLegal && styles.legal,
                         isHighlight && styles.highlight
                       ]}
                       onPress={() => handlePress(sq)}
                     >
-                      <Text style={styles.piece}>
+                      {/* Indicador de movimento legal (Círculo) */}
+                      {isLegal && <View style={styles.legalIndicator} />}
+                      
+                      <Text style={[
+                        styles.piece,
+                        piece?.color === 'b' ? styles.pieceBlack : styles.pieceWhite
+                      ]}>
                         {piece ? PIECE_SYMBOLS[`${piece.color}${piece.type}`] : ''}
                       </Text>
                     </TouchableOpacity>
@@ -113,10 +113,10 @@ export default function TrainingScreen() {
             ))}
           </View>
           <TouchableOpacity 
-            style={styles.btn} 
-            onPress={() => { setGame(new Chess()); setLastMove(null); setStatus('Nova partida!'); forceUpdate(); }}
+            style={styles.resetBtn} 
+            onPress={() => { setGame(new Chess()); setLastMove(null); setStatus('Novo jogo!'); forceUpdate(); }}
           >
-            <Text style={styles.btnText}>Reiniciar</Text>
+            <Text style={styles.resetBtnText}>🔄 Reiniciar Jogo</Text>
           </TouchableOpacity>
         </View>
       </SectionCard>
@@ -126,15 +126,24 @@ export default function TrainingScreen() {
 
 const styles = StyleSheet.create({
   boardContainer: { alignItems: 'center' },
-  board: { borderWidth: 3, borderColor: palette.border, borderRadius: 4 },
+  board: { borderWidth: 4, borderColor: '#333', borderRadius: 4, overflow: 'hidden' },
   row: { flexDirection: 'row' },
-  square: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
-  squareLight: { backgroundColor: '#eedab5' },
-  squareDark: { backgroundColor: '#8b5a2b' },
-  selected: { backgroundColor: '#7cfc00' },
-  legal: { backgroundColor: 'rgba(124, 252, 0, 0.4)' },
-  highlight: { backgroundColor: 'rgba(255, 215, 0, 0.5)' },
-  piece: { fontSize: 30, color: '#000' },
-  btn: { marginTop: 20, backgroundColor: palette.gold, padding: 12, borderRadius: 8, width: 200, alignItems: 'center' },
-  btnText: { fontWeight: 'bold', color: '#000' }
+  square: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  squareLight: { backgroundColor: '#f0d9b5' },
+  squareDark: { backgroundColor: '#b58863' },
+  selected: { backgroundColor: '#baca44' },
+  highlight: { backgroundColor: 'rgba(255, 255, 0, 0.3)' },
+  legalIndicator: {
+    position: 'absolute',
+    width: 15,
+    height: 15,
+    borderRadius: 7.5,
+    backgroundColor: 'rgba(0, 0, 0, 0.15)',
+    zIndex: 1
+  },
+  piece: { fontSize: 32, zIndex: 2 },
+  pieceWhite: { color: '#fff', textShadowColor: '#000', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 1 },
+  pieceBlack: { color: '#000', fontWeight: 'bold' },
+  resetBtn: { marginTop: 20, backgroundColor: palette.gold, padding: 15, borderRadius: 12, width: '100%', alignItems: 'center' },
+  resetBtnText: { fontWeight: 'bold', color: '#000', fontSize: 16 }
 });
