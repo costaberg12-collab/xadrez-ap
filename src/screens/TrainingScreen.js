@@ -11,6 +11,8 @@ const PIECE_SYMBOLS = {
 };
 
 const FILES = ['a','b','c','d','e','f','g','h'];
+const SQUARE_SIZE = 40; // Tamanho fixo para garantir alinhamento
+const BOARD_SIZE = SQUARE_SIZE * 8;
 
 export default function TrainingScreen() {
   const [game, setGame] = useState(new Chess());
@@ -18,7 +20,7 @@ export default function TrainingScreen() {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [isThinking, setIsThinking] = useState(false);
   const [lastMove, setLastMove] = useState(null);
-  const [status, setStatus] = useState('Toque em uma peça para ver os movimentos.');
+  const [status, setStatus] = useState('Brancas jogam.');
 
   const board = useMemo(() => game.board(), [tick]);
   const legalMoves = useMemo(() => {
@@ -30,18 +32,16 @@ export default function TrainingScreen() {
 
   const makeAiMove = (currentGame) => {
     setIsThinking(true);
-    setStatus('Máquina pensando...');
     setTimeout(() => {
       const moves = currentGame.moves();
       if (moves.length > 0) {
         const move = moves[Math.floor(Math.random() * moves.length)];
         const result = currentGame.move(move);
         setLastMove({ from: result.from, to: result.to });
-        setStatus(currentGame.isCheckmate() ? 'Fim de jogo: Máquina venceu!' : 'Sua vez.');
       }
       setIsThinking(false);
       forceUpdate();
-    }, 600);
+    }, 500);
   };
 
   const handlePress = (square) => {
@@ -63,19 +63,19 @@ export default function TrainingScreen() {
   };
 
   return (
-    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez Inteligente" subtitle={status}>
+    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez AP" subtitle={status}>
       <SectionCard title="Tabuleiro" icon="🎮">
         <View style={styles.outerContainer}>
-          {/* Container principal do tabuleiro com números à esquerda */}
-          <View style={styles.boardWithRanks}>
-            {/* Números (Ranks) 8 a 1 */}
+          
+          <View style={styles.boardWithCoords}>
+            {/* Números Laterais (Ranks) */}
             <View style={styles.ranksColumn}>
               {[8, 7, 6, 5, 4, 3, 2, 1].map(n => (
-                <View key={n} style={styles.coordCell}><Text style={styles.coordText}>{n}</Text></View>
+                <View key={n} style={styles.coordSquare}><Text style={styles.coordText}>{n}</Text></View>
               ))}
             </View>
-            
-            {/* O Tabuleiro propriamente dito */}
+
+            {/* Tabuleiro */}
             <View style={styles.board}>
               {board.map((row, ri) => (
                 <View key={ri} style={styles.row}>
@@ -109,13 +109,15 @@ export default function TrainingScreen() {
             </View>
           </View>
 
-          {/* Letras (Files) a-h embaixo do tabuleiro */}
-          <View style={styles.filesRow}>
-            {/* Espaço vazio para alinhar com a coluna de números */}
-            <View style={styles.coordSpacer} />
-            {FILES.map(f => (
-              <View key={f} style={styles.coordCell}><Text style={styles.coordText}>{f.toUpperCase()}</Text></View>
-            ))}
+          {/* Letras Inferiores (Files) - Alinhadas com o tabuleiro */}
+          <View style={styles.filesRowContainer}>
+             {/* Espaço vazio para compensar a coluna de números */}
+            <View style={styles.ranksSpacer} />
+            <View style={styles.filesRow}>
+              {FILES.map(f => (
+                <View key={f} style={styles.coordSquare}><Text style={styles.coordText}>{f.toUpperCase()}</Text></View>
+              ))}
+            </View>
           </View>
 
           <TouchableOpacity 
@@ -131,24 +133,28 @@ export default function TrainingScreen() {
 }
 
 const styles = StyleSheet.create({
-  outerContainer: { alignItems: 'center', padding: 10 },
-  boardWithRanks: { flexDirection: 'row' },
-  ranksColumn: { justifyContent: 'space-around', paddingRight: 5 },
-  filesRow: { flexDirection: 'row', marginTop: 5, width: '100%', paddingLeft: 5 },
-  board: { borderWidth: 2, borderColor: '#333', borderRadius: 2, overflow: 'hidden' },
+  outerContainer: { alignItems: 'center', paddingVertical: 20 },
+  boardWithCoords: { flexDirection: 'row', alignItems: 'flex-start' },
+  ranksColumn: { height: BOARD_SIZE, justifyContent: 'space-between', marginRight: 5 },
+  board: { width: BOARD_SIZE, height: BOARD_SIZE, borderWidth: 2, borderColor: '#333' },
   row: { flexDirection: 'row' },
-  square: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', position: 'relative' },
+  square: { width: SQUARE_SIZE, height: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center', position: 'relative' },
   squareLight: { backgroundColor: '#f0d9b5' },
   squareDark: { backgroundColor: '#b58863' },
   selected: { backgroundColor: '#baca44' },
-  highlight: { backgroundColor: 'rgba(255, 255, 0, 0.3)' },
-  legalIndicator: { width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(0, 0, 0, 0.12)', position: 'absolute' },
+  highlight: { backgroundColor: 'rgba(255, 255, 0, 0.4)' },
+  legalIndicator: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(0, 0, 0, 0.15)', position: 'absolute' },
   piece: { fontSize: 28 },
   pieceWhite: { color: '#fff', textShadowColor: '#000', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 1 },
   pieceBlack: { color: '#000', fontWeight: 'bold' },
-  coordCell: { width: 40, height: 40, justifyContent: 'center', alignItems: 'center' },
-  coordText: { fontSize: 12, fontWeight: 'bold', color: palette.textMuted },
-  coordSpacer: { width: 20 }, // Deve bater com a largura da ranksColumn aprox.
-  resetBtn: { marginTop: 20, backgroundColor: palette.gold, padding: 12, borderRadius: 8, width: '100%', alignItems: 'center' },
-  resetBtnText: { fontWeight: 'bold', color: '#000' }
+  
+  filesRowContainer: { flexDirection: 'row', marginTop: 5 },
+  ranksSpacer: { width: 20 }, // Deve ser igual ou próximo à largura da ranksColumn
+  filesRow: { width: BOARD_SIZE, flexDirection: 'row', justifyContent: 'space-between' },
+  
+  coordSquare: { width: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center' },
+  coordText: { fontSize: 13, fontWeight: 'bold', color: palette.textMuted },
+  
+  resetBtn: { marginTop: 30, backgroundColor: palette.gold, padding: 15, borderRadius: 10, width: BOARD_SIZE + 30, alignItems: 'center' },
+  resetBtnText: { fontWeight: 'bold', color: '#000', fontSize: 16 }
 });
