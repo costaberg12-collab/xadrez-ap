@@ -11,7 +11,7 @@ const PIECE_SYMBOLS = {
 };
 
 const FILES = ['a','b','c','d','e','f','g','h'];
-const SQUARE_SIZE = 40; // Tamanho fixo para garantir alinhamento
+const SQUARE_SIZE = 40; 
 const BOARD_SIZE = SQUARE_SIZE * 8;
 
 export default function TrainingScreen() {
@@ -20,7 +20,6 @@ export default function TrainingScreen() {
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [isThinking, setIsThinking] = useState(false);
   const [lastMove, setLastMove] = useState(null);
-  const [status, setStatus] = useState('Brancas jogam.');
 
   const board = useMemo(() => game.board(), [tick]);
   const legalMoves = useMemo(() => {
@@ -63,7 +62,7 @@ export default function TrainingScreen() {
   };
 
   return (
-    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez AP" subtitle={status}>
+    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez AP" subtitle={isThinking ? "Máquina pensando..." : "Brancas jogam"}>
       <SectionCard title="Tabuleiro" icon="🎮">
         <View style={styles.outerContainer}>
           
@@ -109,10 +108,8 @@ export default function TrainingScreen() {
             </View>
           </View>
 
-          {/* Letras Inferiores (Files) - Alinhadas com o tabuleiro */}
+          {/* Letras Inferiores (Files) - Ajustadas com padding extra para a direita */}
           <View style={styles.filesRowContainer}>
-             {/* Espaço vazio para compensar a coluna de números */}
-            <View style={styles.ranksSpacer} />
             <View style={styles.filesRow}>
               {FILES.map(f => (
                 <View key={f} style={styles.coordSquare}><Text style={styles.coordText}>{f.toUpperCase()}</Text></View>
@@ -135,7 +132,7 @@ export default function TrainingScreen() {
 const styles = StyleSheet.create({
   outerContainer: { alignItems: 'center', paddingVertical: 20 },
   boardWithCoords: { flexDirection: 'row', alignItems: 'flex-start' },
-  ranksColumn: { height: BOARD_SIZE, justifyContent: 'space-between', marginRight: 5 },
+  ranksColumn: { height: BOARD_SIZE, justifyContent: 'space-around', marginRight: 8 },
   board: { width: BOARD_SIZE, height: BOARD_SIZE, borderWidth: 2, borderColor: '#333' },
   row: { flexDirection: 'row' },
   square: { width: SQUARE_SIZE, height: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center', position: 'relative' },
@@ -148,9 +145,18 @@ const styles = StyleSheet.create({
   pieceWhite: { color: '#fff', textShadowColor: '#000', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 1 },
   pieceBlack: { color: '#000', fontWeight: 'bold' },
   
-  filesRowContainer: { flexDirection: 'row', marginTop: 5 },
-  ranksSpacer: { width: 20 }, // Deve ser igual ou próximo à largura da ranksColumn
-  filesRow: { width: BOARD_SIZE, flexDirection: 'row', justifyContent: 'space-between' },
+  filesRowContainer: { 
+    width: BOARD_SIZE + 35, // Largura total compensando a coluna de números
+    flexDirection: 'row', 
+    justifyContent: 'flex-end', // Empurra as letras para alinhar com o tabuleiro à direita
+    marginTop: 5,
+    paddingRight: 2, // Ajuste fino para a direita
+  },
+  filesRow: { 
+    width: BOARD_SIZE, 
+    flexDirection: 'row', 
+    justifyContent: 'space-between' 
+  },
   
   coordSquare: { width: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center' },
   coordText: { fontSize: 13, fontWeight: 'bold', color: palette.textMuted },
