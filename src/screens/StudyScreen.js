@@ -1,7 +1,6 @@
-import React, { useState, useMemo } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View, Vibration } from 'react-native';
 import { Chess } from 'chess.js';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import ScreenContainer from '../components/ScreenContainer';
 import SectionCard from '../components/SectionCard';
 import { palette } from '../theme/palette';
@@ -19,121 +18,126 @@ const RANKS_WIDTH = 25;
 const PUZZLES = [
   {
     id: 'p1',
-    title: 'Xeque-mate em 1',
+    title: 'O Beijo da Dama',
     theme: 'Mate em 1',
-    difficulty: 'Fácil',
+    difficulty: 'Iniciante',
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
-    solution: ['Qxf7#'],
-    solutionFromTo: { from: 'h5', to: 'f7' },
-    hint: 'A dama branca pode atacar o ponto mais fraco em f7.',
-    description: 'Brancas jogam e dão xeque-mate em um lance.'
+    solution: { from: 'h5', to: 'f7' },
+    explanation: 'A Dama ataca o rei protegida pelo Bispo de c4. Xeque-mate!'
   },
   {
     id: 'p2',
-    title: 'Garfo de Cavalo',
-    theme: 'Tática',
-    difficulty: 'Fácil',
-    fen: 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
-    solution: ['Nc6'],
-    solutionFromTo: { from: 'd4', to: 'c6' },
-    hint: 'Mova o cavalo para atacar rei e dama ao mesmo tempo.',
-    description: 'Encontre o lance que ganha material valioso.'
+    title: 'Ataque Duplo',
+    theme: 'Garfo',
+    difficulty: 'Intermediário',
+    fen: 'rnbqkbnr/ppp2ppp/4p3/3p4/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4',
+    solution: { from: 'c4', to: 'b5' },
+    explanation: 'O Bispo em b5 dá xeque no rei e ataca a casa c6 ao mesmo tempo.'
   }
 ];
 
 export default function StudyScreen() {
   const [selectedPuzzle, setSelectedPuzzle] = useState(null);
   const [game, setGame] = useState(null);
-  const [tick, setTick] = useState(0);
   const [selectedSquare, setSelectedSquare] = useState(null);
-  const [solved, setSolved] = useState(false);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [status, setStatus] = useState('Encontre o melhor lance.');
+  const [isSolved, setIsSolved] = useState(false);
+  const [errorSquare, setErrorSquare] = useState(null);
+  const [hintSquare, setHintSquare] = useState(null);
 
-  const board = useMemo(() => game ? game.board() : null, [game, tick]);
+  // Inicializa o puzzle
+  const startPuzzle = (puzzle) => {
+    setSelectedPuzzle(puzzle);
+    setGame(new Chess(puzzle.fen));
+    setIsSolved(false);
+    setSelectedSquare(null);
+    setErrorSquare(null);
+    setHintSquare(null);
+    setStatus('Sua vez: Brancas jogam.');
+  };
+
+  const board = useMemo(() => game ? game.board() : [], [game, isSolved]);
+  
   const legalMoves = useMemo(() => {
     if (!selectedSquare || !game) return [];
     return game.moves({ square: selectedSquare, verbose: true }).map(m => m.to);
-  }, [selectedSquare, tick]);
+  }, [selectedSquare, game]);
 
-  const forceUpdate = () => setTick(t => t + 1);
+  const handlePress = (square) => {
+    if (!game || isSolved) return;
 
-  function startPuzzle(puzzle) {
-    setSelectedPuzzle(puzzle);
-    setGame(new Chess(puzzle.fen));
-    setSolved(false);
-    setSelectedSquare(null);
-    setIsAnimating(false);
-    forceUpdate();
-  }
-
-  // Função para rodar a jogada automaticamente
-  function playSolution() {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    
-    // Reset para posição inicial
-    const newGame = new Chess(selectedPuzzle.fen);
-    setGame(newGame);
-    setSolved(false);
-    forceUpdate();
-
-    // Aguarda um pouco e faz o lance
-    setTimeout(() => {
-      newGame.move(selectedPuzzle.solutionFromTo);
-      setGame(newGame);
-      setSolved(true);
-      setIsAnimating(false);
-      forceUpdate();
-    }, 1000);
-  }
-
-  function handlePress(square) {
-    if (!game || solved || isAnimating) return;
-    
+    // Se já tem uma peça selecionada, tenta mover
     if (selectedSquare) {
       const move = game.moves({ square: selectedSquare, verbose: true }).find(m => m.to === square);
+      
       if (move) {
-        const san = move.san;
-        if (selectedPuzzle.solution.includes(san) || (move.promotion && selectedPuzzle.solution.some(s => s.startsWith(san)))) {
+        // Verifica se é a solução correta
+        if (move.from === selectedPuzzle.solution.from && move.to === selectedPuzzle.solution.to) {
           game.move(move);
-          setSolved(true);
-          forceUpdate();
+          setIsSolved(true);
+          setStatus('✨ Perfeito! Você acertou.');
         } else {
-          Alert.alert('Tente de novo!', 'Esse lance não resolve o puzzle.');
+          // Errou: Feedback visual de erro
+          setErrorSquare(square);
+          setTimeout(() => setErrorSquare(null), 500);
           setSelectedSquare(null);
+          setStatus('❌ Esse não é o melhor lance. Tente outro!');
         }
         return;
       }
     }
 
+    // Seleciona peça (apenas brancas)
     const piece = game.get(square);
-    if (piece && piece.color === game.turn()) {
+    if (piece && piece.color === 'w') {
       setSelectedSquare(square);
+      setErrorSquare(null);
     } else {
       setSelectedSquare(null);
     }
-  }
+  };
+
+  const showSolution = () => {
+    if (!selectedPuzzle) return;
+    setHintSquare(selectedPuzzle.solution.from);
+    setStatus('Dica: Observe a peça destacada em amarelo.');
+    
+    setTimeout(() => {
+      setHintSquare(selectedPuzzle.solution.to);
+      setTimeout(() => {
+        const solGame = new Chess(selectedPuzzle.fen);
+        solGame.move(selectedPuzzle.solution);
+        setGame(solGame);
+        setIsSolved(true);
+        setHintSquare(null);
+        setStatus('💡 Esta era a solução correta.');
+      }, 800);
+    }, 800);
+  };
 
   return (
-    <ScreenContainer eyebrow={selectedPuzzle ? '🧩 Puzzle' : '📚 Estudo'} title={selectedPuzzle ? selectedPuzzle.title : 'Modo Estudo'}>
+    <ScreenContainer eyebrow={selectedPuzzle ? '🧩 Exercício' : '📚 Estudo'} title={selectedPuzzle ? selectedPuzzle.title : 'Melhore seu Jogo'}>
       {!selectedPuzzle ? (
-        <View style={styles.puzzleGrid}>
+        <View style={styles.list}>
           {PUZZLES.map(p => (
-            <TouchableOpacity key={p.id} style={styles.card} onPress={() => startPuzzle(p)}>
-              <Text style={styles.cardTitle}>{p.title}</Text>
-              <Text style={styles.cardSub}>{p.difficulty}</Text>
+            <TouchableOpacity key={p.id} style={styles.puzzleCard} onPress={() => startPuzzle(p)}>
+              <View style={styles.cardInfo}>
+                <Text style={styles.cardTitle}>{p.title}</Text>
+                <Text style={styles.cardTheme}>{p.theme} • {p.difficulty}</Text>
+              </View>
+              <Text style={styles.cardArrow}>→</Text>
             </TouchableOpacity>
           ))}
         </View>
       ) : (
-        <View style={styles.outerContainer}>
-          <Text style={styles.puzzleDesc}>{selectedPuzzle.description}</Text>
-          <View style={styles.boardWithCoords}>
-            <View style={styles.ranksColumn}>
-              {[8,7,6,5,4,3,2,1].map(n => (
-                <View key={n} style={styles.coordSquare}><Text style={styles.coordText}>{n}</Text></View>
-              ))}
+        <View style={styles.playArea}>
+          <Text style={styles.statusText}>{status}</Text>
+          
+          <View style={styles.boardContainer}>
+            <View style={styles.ranks}>
+              {[8,7,6,5,4,3,2,1].map(n => <Text key={n} style={styles.coordV}>{n}</Text>)}
             </View>
+            
             <View style={styles.board}>
               {board.map((row, ri) => (
                 <View key={ri} style={styles.row}>
@@ -142,14 +146,24 @@ export default function StudyScreen() {
                     const isLight = (ri + ci) % 2 === 0;
                     const isSelected = selectedSquare === sq;
                     const isLegal = legalMoves.includes(sq);
+                    const isError = errorSquare === sq;
+                    const isHint = hintSquare === sq;
+
                     return (
-                      <TouchableOpacity
-                        key={sq}
-                        style={[styles.square, isLight ? styles.squareLight : styles.squareDark, isSelected && styles.selected]}
+                      <TouchableOpacity 
+                        key={sq} 
+                        activeOpacity={0.8}
+                        style={[
+                          styles.square, 
+                          isLight ? styles.squareLight : styles.squareDark,
+                          isSelected && styles.selected,
+                          isError && styles.error,
+                          isHint && styles.hint
+                        ]}
                         onPress={() => handlePress(sq)}
                       >
-                        {isLegal && <View style={styles.legalIndicator} />}
-                        <Text style={[styles.piece, piece?.color === 'b' ? styles.pieceBlack : styles.pieceWhite]}>
+                        {isLegal && <View style={styles.legalDot} />}
+                        <Text style={[styles.piece, piece?.color === 'b' ? styles.pieceB : styles.pieceW]}>
                           {piece ? PIECE_SYMBOLS[`${piece.color}${piece.type}`] : ''}
                         </Text>
                       </TouchableOpacity>
@@ -159,22 +173,25 @@ export default function StudyScreen() {
               ))}
             </View>
           </View>
-          <View style={styles.filesRowContainer}>
-            {FILES.map(f => (
-              <View key={f} style={styles.fileSquare}><Text style={styles.coordText}>{f.toUpperCase()}</Text></View>
-            ))}
+
+          <View style={styles.files}>
+            {FILES.map(f => <Text key={f} style={styles.coordH}>{f.toUpperCase()}</Text>)}
           </View>
 
-          {solved && <Text style={styles.solvedText}>🎉 Excelente! {isAnimating ? 'Veja a solução.' : 'Você acertou!'}</Text>}
-          
-          <View style={styles.actionRow}>
-            {!solved && (
-              <TouchableOpacity style={styles.solutionBtn} onPress={playSolution} disabled={isAnimating}>
-                <Text style={styles.solutionBtnText}>💡 Ver Jogada</Text>
+          {isSolved && (
+            <View style={styles.explanationBox}>
+              <Text style={styles.explanationText}>{selectedPuzzle.explanation}</Text>
+            </View>
+          )}
+
+          <View style={styles.actions}>
+            {!isSolved && (
+              <TouchableOpacity style={styles.btnHint} onPress={showSolution}>
+                <Text style={styles.btnTextHint}>💡 Ver Solução</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.backBtn} onPress={() => setSelectedPuzzle(null)}>
-              <Text style={styles.backBtnText}>← Sair</Text>
+            <TouchableOpacity style={styles.btnBack} onPress={() => setSelectedPuzzle(null)}>
+              <Text style={styles.btnTextBack}>← Voltar à Lista</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -184,32 +201,36 @@ export default function StudyScreen() {
 }
 
 const styles = StyleSheet.create({
-  puzzleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 15, padding: 10 },
-  card: { backgroundColor: palette.card, padding: 20, borderRadius: 15, width: '45%', borderWidth: 1, borderColor: palette.border },
-  cardTitle: { color: '#fff', fontWeight: 'bold' },
-  cardSub: { color: palette.gold, fontSize: 12 },
-  outerContainer: { alignItems: 'center' },
-  puzzleDesc: { color: palette.text, marginBottom: 20, textAlign: 'center' },
-  boardWithCoords: { flexDirection: 'row' },
-  ranksColumn: { width: RANKS_WIDTH, height: BOARD_SIZE, justifyContent: 'space-between' },
-  board: { width: BOARD_SIZE, height: BOARD_SIZE, borderWidth: 2, borderColor: '#333' },
+  list: { padding: 15, gap: 12 },
+  puzzleCard: { flexDirection: 'row', backgroundColor: palette.card, padding: 18, borderRadius: 16, alignItems: 'center', borderWidth: 1, borderColor: palette.border },
+  cardInfo: { flex: 1 },
+  cardTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold', marginBottom: 4 },
+  cardTheme: { color: palette.gold, fontSize: 13 },
+  cardArrow: { color: palette.textMuted, fontSize: 20 },
+  playArea: { alignItems: 'center', padding: 10 },
+  statusText: { color: palette.text, fontSize: 15, fontWeight: '600', marginBottom: 15, textAlign: 'center', minHeight: 40 },
+  boardContainer: { flexDirection: 'row', alignItems: 'center' },
+  ranks: { height: BOARD_SIZE, justifyContent: 'space-around', paddingRight: 8 },
+  coordV: { color: palette.textMuted, fontSize: 12, fontWeight: 'bold' },
+  board: { width: BOARD_SIZE, height: BOARD_SIZE, borderWidth: 3, borderColor: '#222', borderRadius: 4, overflow: 'hidden' },
   row: { flexDirection: 'row' },
   square: { width: SQUARE_SIZE, height: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center' },
-  squareLight: { backgroundColor: '#f0d9b5' },
-  squareDark: { backgroundColor: '#b58863' },
+  squareLight: { backgroundColor: '#eedab5' },
+  squareDark: { backgroundColor: '#8b5a2b' },
   selected: { backgroundColor: '#baca44' },
-  legalIndicator: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(0,0,0,0.15)', position: 'absolute' },
-  piece: { fontSize: 28 },
-  pieceWhite: { color: '#fff', textShadowColor: '#000', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 1 },
-  pieceBlack: { color: '#000', fontWeight: 'bold' },
-  filesRowContainer: { width: BOARD_SIZE, marginLeft: RANKS_WIDTH, flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 },
-  fileSquare: { width: SQUARE_SIZE, alignItems: 'center' },
-  coordText: { fontSize: 13, fontWeight: 'bold', color: palette.textMuted },
-  coordSquare: { height: SQUARE_SIZE, justifyContent: 'center', alignItems: 'center' },
-  solvedText: { color: '#28F0A1', fontWeight: 'bold', marginTop: 15, fontSize: 18 },
-  actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
-  solutionBtn: { backgroundColor: palette.gold, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
-  solutionBtnText: { color: '#000', fontWeight: 'bold' },
-  backBtn: { backgroundColor: palette.surface, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: palette.border },
-  backBtnText: { color: palette.text }
+  error: { backgroundColor: '#ff6b6b' },
+  hint: { backgroundColor: '#ffd700' },
+  legalDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(0,0,0,0.15)', position: 'absolute' },
+  piece: { fontSize: 30 },
+  pieceW: { color: '#fff', textShadowColor: '#000', textShadowRadius: 2 },
+  pieceB: { color: '#000', fontWeight: 'bold' },
+  files: { flexDirection: 'row', width: BOARD_SIZE, marginLeft: RANKS_WIDTH, marginTop: 8, justifyContent: 'space-around' },
+  coordH: { color: palette.textMuted, fontSize: 12, fontWeight: 'bold' },
+  explanationBox: { backgroundColor: 'rgba(40,240,161,0.1)', padding: 15, borderRadius: 12, marginTop: 20, width: BOARD_SIZE, borderWidth: 1, borderColor: 'rgba(40,240,161,0.3)' },
+  explanationText: { color: '#28F0A1', textAlign: 'center', fontSize: 14, lineHeight: 20 },
+  actions: { flexDirection: 'row', gap: 12, marginTop: 25 },
+  btnHint: { backgroundColor: palette.gold, paddingHorizontal: 22, paddingVertical: 14, borderRadius: 12 },
+  btnTextHint: { color: '#000', fontWeight: 'bold' },
+  btnBack: { backgroundColor: palette.surface, paddingHorizontal: 22, paddingVertical: 14, borderRadius: 12, borderWidth: 1, borderColor: palette.border },
+  btnTextBack: { color: palette.text, fontWeight: 'bold' }
 });
