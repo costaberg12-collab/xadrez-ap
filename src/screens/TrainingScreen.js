@@ -13,6 +13,7 @@ const PIECE_SYMBOLS = {
 const FILES = ['a','b','c','d','e','f','g','h'];
 const SQUARE_SIZE = 40; 
 const BOARD_SIZE = SQUARE_SIZE * 8;
+const RANKS_WIDTH = 25; // Largura fixa para a coluna de números
 
 export default function TrainingScreen() {
   const [game, setGame] = useState(new Chess());
@@ -62,7 +63,7 @@ export default function TrainingScreen() {
   };
 
   return (
-    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez AP" subtitle={isThinking ? "Máquina pensando..." : "Brancas jogam"}>
+    <ScreenContainer eyebrow="♟️ Treino" title="Xadrez AP" subtitle={isThinking ? "Máquina pensando..." : "Sua vez"}>
       <SectionCard title="Tabuleiro" icon="🎮">
         <View style={styles.outerContainer}>
           
@@ -70,7 +71,7 @@ export default function TrainingScreen() {
             {/* Números Laterais (Ranks) */}
             <View style={styles.ranksColumn}>
               {[8, 7, 6, 5, 4, 3, 2, 1].map(n => (
-                <View key={n} style={styles.coordSquare}><Text style={styles.coordText}>{n}</Text></View>
+                <View key={n} style={styles.rankSquare}><Text style={styles.coordText}>{n}</Text></View>
               ))}
             </View>
 
@@ -108,13 +109,11 @@ export default function TrainingScreen() {
             </View>
           </View>
 
-          {/* Letras Inferiores (Files) - Ajustadas com padding extra para a direita */}
+          {/* Letras Inferiores (Files) - Centralização Absoluta */}
           <View style={styles.filesRowContainer}>
-            <View style={styles.filesRow}>
-              {FILES.map(f => (
-                <View key={f} style={styles.coordSquare}><Text style={styles.coordText}>{f.toUpperCase()}</Text></View>
-              ))}
-            </View>
+            {FILES.map(f => (
+              <View key={f} style={styles.fileSquare}><Text style={styles.coordText}>{f.toUpperCase()}</Text></View>
+            ))}
           </View>
 
           <TouchableOpacity 
@@ -132,7 +131,8 @@ export default function TrainingScreen() {
 const styles = StyleSheet.create({
   outerContainer: { alignItems: 'center', paddingVertical: 20 },
   boardWithCoords: { flexDirection: 'row', alignItems: 'flex-start' },
-  ranksColumn: { height: BOARD_SIZE, justifyContent: 'space-around', marginRight: 8 },
+  ranksColumn: { width: RANKS_WIDTH, height: BOARD_SIZE, justifyContent: 'space-between', marginRight: 5 },
+  rankSquare: { height: SQUARE_SIZE, justifyContent: 'center', alignItems: 'center' },
   board: { width: BOARD_SIZE, height: BOARD_SIZE, borderWidth: 2, borderColor: '#333' },
   row: { flexDirection: 'row' },
   square: { width: SQUARE_SIZE, height: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center', position: 'relative' },
@@ -146,19 +146,14 @@ const styles = StyleSheet.create({
   pieceBlack: { color: '#000', fontWeight: 'bold' },
   
   filesRowContainer: { 
-    width: BOARD_SIZE + 35, // Largura total compensando a coluna de números
-    flexDirection: 'row', 
-    justifyContent: 'flex-end', // Empurra as letras para alinhar com o tabuleiro à direita
-    marginTop: 5,
-    paddingRight: 2, // Ajuste fino para a direita
-  },
-  filesRow: { 
     width: BOARD_SIZE, 
+    marginLeft: RANKS_WIDTH + 5, // Compensa exatamente a largura da coluna de números + margem
     flexDirection: 'row', 
-    justifyContent: 'space-between' 
+    justifyContent: 'space-between',
+    marginTop: 5
   },
+  fileSquare: { width: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center' },
   
-  coordSquare: { width: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center' },
   coordText: { fontSize: 13, fontWeight: 'bold', color: palette.textMuted },
   
   resetBtn: { marginTop: 30, backgroundColor: palette.gold, padding: 15, borderRadius: 10, width: BOARD_SIZE + 30, alignItems: 'center' },
