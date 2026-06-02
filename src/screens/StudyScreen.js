@@ -24,6 +24,7 @@ const PUZZLES = [
     difficulty: 'Fácil',
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
     solution: ['Qxf7#'],
+    solutionFromTo: { from: 'h5', to: 'f7' },
     hint: 'A dama branca pode atacar o ponto mais fraco em f7.',
     description: 'Brancas jogam e dão xeque-mate em um lance.'
   },
@@ -34,6 +35,7 @@ const PUZZLES = [
     difficulty: 'Fácil',
     fen: 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4',
     solution: ['Nc6'],
+    solutionFromTo: { from: 'd4', to: 'c6' },
     hint: 'Mova o cavalo para atacar rei e dama ao mesmo tempo.',
     description: 'Encontre o lance que ganha material valioso.'
   }
@@ -45,7 +47,7 @@ export default function StudyScreen() {
   const [tick, setTick] = useState(0);
   const [selectedSquare, setSelectedSquare] = useState(null);
   const [solved, setSolved] = useState(false);
-  const [tab, setTab] = useState('puzzles');
+  const [isAnimating, setIsAnimating] = useState(false);
 
   const board = useMemo(() => game ? game.board() : null, [game, tick]);
   const legalMoves = useMemo(() => {
@@ -60,11 +62,33 @@ export default function StudyScreen() {
     setGame(new Chess(puzzle.fen));
     setSolved(false);
     setSelectedSquare(null);
+    setIsAnimating(false);
     forceUpdate();
   }
 
+  // Função para rodar a jogada automaticamente
+  function playSolution() {
+    if (isAnimating) return;
+    setIsAnimating(true);
+    
+    // Reset para posição inicial
+    const newGame = new Chess(selectedPuzzle.fen);
+    setGame(newGame);
+    setSolved(false);
+    forceUpdate();
+
+    // Aguarda um pouco e faz o lance
+    setTimeout(() => {
+      newGame.move(selectedPuzzle.solutionFromTo);
+      setGame(newGame);
+      setSolved(true);
+      setIsAnimating(false);
+      forceUpdate();
+    }, 1000);
+  }
+
   function handlePress(square) {
-    if (!game || solved) return;
+    if (!game || solved || isAnimating) return;
     
     if (selectedSquare) {
       const move = game.moves({ square: selectedSquare, verbose: true }).find(m => m.to === square);
@@ -75,7 +99,7 @@ export default function StudyScreen() {
           setSolved(true);
           forceUpdate();
         } else {
-          Alert.alert('Ops!', 'Este não é o lance correto. Tente novamente!');
+          Alert.alert('Tente de novo!', 'Esse lance não resolve o puzzle.');
           setSelectedSquare(null);
         }
         return;
@@ -141,11 +165,18 @@ export default function StudyScreen() {
             ))}
           </View>
 
-          {solved && <Text style={styles.solvedText}>🎉 Excelente! Você acertou!</Text>}
+          {solved && <Text style={styles.solvedText}>🎉 Excelente! {isAnimating ? 'Veja a solução.' : 'Você acertou!'}</Text>}
           
-          <TouchableOpacity style={styles.backBtn} onPress={() => setSelectedPuzzle(null)}>
-            <Text style={styles.backBtnText}>← Voltar aos Puzzles</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            {!solved && (
+              <TouchableOpacity style={styles.solutionBtn} onPress={playSolution} disabled={isAnimating}>
+                <Text style={styles.solutionBtnText}>💡 Ver Jogada</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.backBtn} onPress={() => setSelectedPuzzle(null)}>
+              <Text style={styles.backBtnText}>← Sair</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
     </ScreenContainer>
@@ -176,6 +207,9 @@ const styles = StyleSheet.create({
   coordText: { fontSize: 13, fontWeight: 'bold', color: palette.textMuted },
   coordSquare: { height: SQUARE_SIZE, justifyContent: 'center', alignItems: 'center' },
   solvedText: { color: '#28F0A1', fontWeight: 'bold', marginTop: 15, fontSize: 18 },
-  backBtn: { marginTop: 20, backgroundColor: palette.surface, padding: 12, borderRadius: 8, borderWidth: 1, borderColor: palette.border },
+  actionRow: { flexDirection: 'row', gap: 10, marginTop: 20 },
+  solutionBtn: { backgroundColor: palette.gold, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8 },
+  solutionBtnText: { color: '#000', fontWeight: 'bold' },
+  backBtn: { backgroundColor: palette.surface, paddingHorizontal: 20, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: palette.border },
   backBtnText: { color: palette.text }
 });
