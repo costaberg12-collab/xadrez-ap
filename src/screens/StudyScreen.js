@@ -18,48 +18,48 @@ const RANKS_WIDTH = 25;
 const PUZZLES = [
   {
     id: 'p1',
-    title: 'O Beijo da Dama',
-    theme: 'Mate com Apoio',
+    title: 'O Beijo da Dama (Mate com Apoio)',
+    theme: 'Finalização',
     difficulty: 'Iniciante',
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
     solution: { from: 'h5', to: 'f7' },
-    explanation: 'Xeque-mate! A Dama ataca o Rei protegida pelo Bispo de c4.'
+    explanation: 'A Dama "beija" o Rei adversário com a proteção do Bispo. Xeque-mate!'
   },
   {
     id: 'p2',
-    title: 'Garfo de Cavalo',
+    title: 'Garfo de Cavalo (Ataque Duplo)',
     theme: 'Tática de Ganho',
     difficulty: 'Intermediário',
     fen: 'r1bqkbnr/ppp1pppp/2n5/3p4/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 4',
     solution: { from: 'f3', to: 'e5' },
-    explanation: 'O Cavalo captura e ataca múltiplas peças simultaneamente.'
+    explanation: 'O Cavalo ataca duas peças valiosas ao mesmo tempo, como um garfo.'
   },
   {
     id: 'p3',
-    title: 'Cravada do Bispo',
+    title: 'Prego no Bispo (Cravada)',
     theme: 'Pressão',
     difficulty: 'Intermediário',
     fen: 'r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 4 4',
     solution: { from: 'c3', to: 'd5' },
-    explanation: 'O Cavalo avança para pressionar o defensor cravado.'
+    explanation: 'A peça fica "pregada" (cravada) e não pode sair para defender.'
   },
   {
     id: 'p4',
-    title: 'Ataque Descoberto',
+    title: 'Raio-X (Ataque Descoberto)',
     theme: 'Tática Avançada',
     difficulty: 'Avançado',
     fen: 'r1bqk2r/ppp2ppp/2n5/3pP3/1b1P1B2/2N2N2/PPP3PP/R2QKB1R w KQkq - 0 8',
     solution: { from: 'e5', to: 'e6' },
-    explanation: 'O avanço do peão abre caminho para um ataque devastador.'
+    explanation: 'Uma peça sai da frente revelando um ataque escondido de outra peça.'
   },
   {
     id: 'p5',
-    title: 'Mate de Corredor',
+    title: 'Mate de Corredor (Back Rank Mate)',
     theme: 'Finalização',
     difficulty: 'Médio',
     fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',
     solution: { from: 'a1', to: 'a8' },
-    explanation: 'A Torre aproveita que o Rei está preso pelos próprios peões.'
+    explanation: 'O Rei fica preso no "corredor" formado pelos próprios peões.'
   }
 ];
 
