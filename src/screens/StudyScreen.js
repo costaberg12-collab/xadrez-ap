@@ -21,18 +21,19 @@ const PUZZLES = [
     title: 'O Beijo da Dama',
     theme: 'Mate em 1',
     difficulty: 'Iniciante',
+    // Adicionado Bispo em c4 protegendo a captura em f7
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
     solution: { from: 'h5', to: 'f7' },
-    explanation: 'A Dama ataca o rei protegida pelo Bispo de c4. Xeque-mate!'
+    explanation: 'Xeque-mate! O Rei não pode comer a Dama porque ela está protegida pelo Bispo em c4.'
   },
   {
     id: 'p2',
-    title: 'Ataque Duplo',
-    theme: 'Garfo',
-    difficulty: 'Intermediário',
-    fen: 'rnbqkbnr/ppp2ppp/4p3/3p4/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 0 4',
-    solution: { from: 'c4', to: 'b5' },
-    explanation: 'O Bispo em b5 dá xeque no rei e ataca a casa c6 ao mesmo tempo.'
+    title: 'Defesa do Pastor',
+    theme: 'Xeque-mate',
+    difficulty: 'Iniciante',
+    fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
+    solution: { from: 'f3', to: 'f7' },
+    explanation: 'A Dama ataca f7. O Rei está preso porque a Dama está protegida pelo Bispo.'
   }
 ];
 
