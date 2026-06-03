@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Alert, StyleSheet, Text, TouchableOpacity, View, Vibration } from 'react-native';
+import React, { useState, useMemo } from 'react';
+import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Chess } from 'chess.js';
 import ScreenContainer from '../components/ScreenContainer';
 import SectionCard from '../components/SectionCard';
@@ -18,22 +18,48 @@ const RANKS_WIDTH = 25;
 const PUZZLES = [
   {
     id: 'p1',
-    title: 'O Beijo da Dama',
-    theme: 'Mate em 1',
+    title: 'Mate do Pastor',
+    theme: 'Finalização',
     difficulty: 'Iniciante',
-    // Adicionado Bispo em c4 protegendo a captura em f7
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
     solution: { from: 'h5', to: 'f7' },
-    explanation: 'Xeque-mate! O Rei não pode comer a Dama porque ela está protegida pelo Bispo em c4.'
+    explanation: 'Xeque-mate! A Dama ataca o Rei protegida pelo Bispo de c4.'
   },
   {
     id: 'p2',
-    title: 'Defesa do Pastor',
-    theme: 'Xeque-mate',
-    difficulty: 'Iniciante',
-    fen: 'r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5Q2/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
-    solution: { from: 'f3', to: 'f7' },
-    explanation: 'A Dama ataca f7. O Rei está preso porque a Dama está protegida pelo Bispo.'
+    title: 'Garfo de Cavalo',
+    theme: 'Tática de Ganho',
+    difficulty: 'Intermediário',
+    fen: 'r1bqkbnr/ppp1pppp/2n5/3p4/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 4',
+    solution: { from: 'f3', to: 'e5' },
+    explanation: 'O Cavalo captura e ataca múltiplas peças simultaneamente.'
+  },
+  {
+    id: 'p3',
+    title: 'Cravada do Bispo',
+    theme: 'Pressão',
+    difficulty: 'Intermediário',
+    fen: 'r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 4 4',
+    solution: { from: 'c3', to: 'd5' },
+    explanation: 'O Cavalo avança para pressionar o defensor cravado.'
+  },
+  {
+    id: 'p4',
+    title: 'Ataque Descoberto',
+    theme: 'Tática Avançada',
+    difficulty: 'Avançado',
+    fen: 'r1bqk2r/ppp2ppp/2n5/3pP3/1b1P1B2/2N2N2/PPP3PP/R2QKB1R w KQkq - 0 8',
+    solution: { from: 'e5', to: 'e6' },
+    explanation: 'O avanço do peão abre caminho para um ataque devastador.'
+  },
+  {
+    id: 'p5',
+    title: 'Mate de Corredor',
+    theme: 'Finalização',
+    difficulty: 'Médio',
+    fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',
+    solution: { from: 'a1', to: 'a8' },
+    explanation: 'A Torre aproveita que o Rei está preso pelos próprios peões.'
   }
 ];
 
@@ -41,12 +67,11 @@ export default function StudyScreen() {
   const [selectedPuzzle, setSelectedPuzzle] = useState(null);
   const [game, setGame] = useState(null);
   const [selectedSquare, setSelectedSquare] = useState(null);
-  const [status, setStatus] = useState('Encontre o melhor lance.');
+  const [status, setStatus] = useState('Analise a posição.');
   const [isSolved, setIsSolved] = useState(false);
   const [errorSquare, setErrorSquare] = useState(null);
   const [hintSquare, setHintSquare] = useState(null);
 
-  // Inicializa o puzzle
   const startPuzzle = (puzzle) => {
     setSelectedPuzzle(puzzle);
     setGame(new Chess(puzzle.fen));
@@ -66,33 +91,25 @@ export default function StudyScreen() {
 
   const handlePress = (square) => {
     if (!game || isSolved) return;
-
-    // Se já tem uma peça selecionada, tenta mover
     if (selectedSquare) {
       const move = game.moves({ square: selectedSquare, verbose: true }).find(m => m.to === square);
-      
       if (move) {
-        // Verifica se é a solução correta
         if (move.from === selectedPuzzle.solution.from && move.to === selectedPuzzle.solution.to) {
           game.move(move);
           setIsSolved(true);
-          setStatus('✨ Perfeito! Você acertou.');
+          setStatus('✅ Movimento Técnico Correto!');
         } else {
-          // Errou: Feedback visual de erro
           setErrorSquare(square);
           setTimeout(() => setErrorSquare(null), 500);
           setSelectedSquare(null);
-          setStatus('❌ Esse não é o melhor lance. Tente outro!');
+          setStatus('❌ Tente outra linha de raciocínio.');
         }
         return;
       }
     }
-
-    // Seleciona peça (apenas brancas)
     const piece = game.get(square);
     if (piece && piece.color === 'w') {
       setSelectedSquare(square);
-      setErrorSquare(null);
     } else {
       setSelectedSquare(null);
     }
@@ -101,8 +118,7 @@ export default function StudyScreen() {
   const showSolution = () => {
     if (!selectedPuzzle) return;
     setHintSquare(selectedPuzzle.solution.from);
-    setStatus('Dica: Observe a peça destacada em amarelo.');
-    
+    setStatus('Dica: Observe a peça chave.');
     setTimeout(() => {
       setHintSquare(selectedPuzzle.solution.to);
       setTimeout(() => {
@@ -111,13 +127,13 @@ export default function StudyScreen() {
         setGame(solGame);
         setIsSolved(true);
         setHintSquare(null);
-        setStatus('💡 Esta era a solução correta.');
+        setStatus('💡 Jogada Técnica Demonstrada.');
       }, 800);
     }, 800);
   };
 
   return (
-    <ScreenContainer eyebrow={selectedPuzzle ? '🧩 Exercício' : '📚 Estudo'} title={selectedPuzzle ? selectedPuzzle.title : 'Melhore seu Jogo'}>
+    <ScreenContainer eyebrow={selectedPuzzle ? '🧩 Tática' : '📚 Treino Técnico'} title={selectedPuzzle ? selectedPuzzle.title : 'Estudos de Xadrez'}>
       {!selectedPuzzle ? (
         <View style={styles.list}>
           {PUZZLES.map(p => (
@@ -133,12 +149,10 @@ export default function StudyScreen() {
       ) : (
         <View style={styles.playArea}>
           <Text style={styles.statusText}>{status}</Text>
-          
           <View style={styles.boardContainer}>
             <View style={styles.ranks}>
               {[8,7,6,5,4,3,2,1].map(n => <Text key={n} style={styles.coordV}>{n}</Text>)}
             </View>
-            
             <View style={styles.board}>
               {board.map((row, ri) => (
                 <View key={ri} style={styles.row}>
@@ -149,18 +163,10 @@ export default function StudyScreen() {
                     const isLegal = legalMoves.includes(sq);
                     const isError = errorSquare === sq;
                     const isHint = hintSquare === sq;
-
                     return (
                       <TouchableOpacity 
                         key={sq} 
-                        activeOpacity={0.8}
-                        style={[
-                          styles.square, 
-                          isLight ? styles.squareLight : styles.squareDark,
-                          isSelected && styles.selected,
-                          isError && styles.error,
-                          isHint && styles.hint
-                        ]}
+                        style={[styles.square, isLight ? styles.squareLight : styles.squareDark, isSelected && styles.selected, isError && styles.error, isHint && styles.hint]}
                         onPress={() => handlePress(sq)}
                       >
                         {isLegal && <View style={styles.legalDot} />}
@@ -174,25 +180,22 @@ export default function StudyScreen() {
               ))}
             </View>
           </View>
-
           <View style={styles.files}>
             {FILES.map(f => <Text key={f} style={styles.coordH}>{f.toUpperCase()}</Text>)}
           </View>
-
           {isSolved && (
             <View style={styles.explanationBox}>
               <Text style={styles.explanationText}>{selectedPuzzle.explanation}</Text>
             </View>
           )}
-
           <View style={styles.actions}>
             {!isSolved && (
               <TouchableOpacity style={styles.btnHint} onPress={showSolution}>
-                <Text style={styles.btnTextHint}>💡 Ver Solução</Text>
+                <Text style={styles.btnTextHint}>📖 Ver Jogada Técnica</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.btnBack} onPress={() => setSelectedPuzzle(null)}>
-              <Text style={styles.btnTextBack}>← Voltar à Lista</Text>
+              <Text style={styles.btnTextBack}>← Voltar</Text>
             </TouchableOpacity>
           </View>
         </View>
