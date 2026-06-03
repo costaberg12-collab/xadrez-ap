@@ -18,8 +18,8 @@ const RANKS_WIDTH = 25;
 const PUZZLES = [
   {
     id: 'p1',
-    title: 'Mate do Pastor',
-    theme: 'Finalização',
+    title: 'O Beijo da Dama',
+    theme: 'Mate com Apoio',
     difficulty: 'Iniciante',
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
     solution: { from: 'h5', to: 'f7' },
