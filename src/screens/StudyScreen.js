@@ -23,7 +23,7 @@ const PUZZLES = [
     difficulty: 'Iniciante',
     fen: 'r1bqkb1r/pppp1ppp/2n2n2/4p2Q/2B1P3/8/PPPP1PPP/RNB1K1NR w KQkq - 4 4',
     solution: { from: 'h5', to: 'f7' },
-    explanation: 'A Dama "beija" o Rei adversário com a proteção do Bispo. Xeque-mate!'
+    explanation: 'Xeque-mate! A Rainha branca se move para f7 e fica encostada no Rei adversário. O Rei não pode capturar a Rainha porque ela está protegida pelo Bispo que está na casa c4.'
   },
   {
     id: 'p2',
@@ -32,7 +32,7 @@ const PUZZLES = [
     difficulty: 'Intermediário',
     fen: 'r1bqkbnr/ppp1pppp/2n5/3p4/3PP3/5N2/PPP2PPP/RNBQKB1R w KQkq - 0 4',
     solution: { from: 'f3', to: 'e5' },
-    explanation: 'O Cavalo ataca duas peças valiosas ao mesmo tempo, como um garfo.'
+    explanation: 'Nesta jogada, o Cavalo captura o peão em e5. Ao fazer isso, o Cavalo ataca simultaneamente a Rainha e a Torre adversária. Como o oponente só pode mover uma peça por vez, você ganhará material no próximo lance.'
   },
   {
     id: 'p3',
@@ -41,7 +41,7 @@ const PUZZLES = [
     difficulty: 'Intermediário',
     fen: 'r1bqk2r/pppp1ppp/2n2n2/4p3/1bB1P3/2N2N2/PPPP1PPP/R1BQK2R w KQkq - 4 4',
     solution: { from: 'c3', to: 'd5' },
-    explanation: 'A peça fica "pregada" (cravada) e não pode sair para defender.'
+    explanation: 'O seu Cavalo avança para d5 aumentando a pressão sobre o Cavalo adversário em f6. O Bispo inimigo em b4 está "cravando" o seu Cavalo de c3, mas o seu avanço força o adversário a tomar uma decisão difícil.'
   },
   {
     id: 'p4',
@@ -50,7 +50,7 @@ const PUZZLES = [
     difficulty: 'Avançado',
     fen: 'r1bqk2r/ppp2ppp/2n5/3pP3/1b1P1B2/2N2N2/PPP3PP/R2QKB1R w KQkq - 0 8',
     solution: { from: 'e5', to: 'e6' },
-    explanation: 'Uma peça sai da frente revelando um ataque escondido de outra peça.'
+    explanation: 'Ao avançar o seu Peão para e6, você libera o caminho para o seu Bispo atacar a Rainha adversária que estava escondida atrás do peão. É um ataque surpresa!'
   },
   {
     id: 'p5',
@@ -59,7 +59,7 @@ const PUZZLES = [
     difficulty: 'Médio',
     fen: '6k1/5ppp/8/8/8/8/5PPP/R5K1 w - - 0 1',
     solution: { from: 'a1', to: 'a8' },
-    explanation: 'O Rei fica preso no "corredor" formado pelos próprios peões.'
+    explanation: 'A sua Torre avança até a casa a8. O Rei adversário está preso na última fileira pelos seus próprios Peões (f7, g7, h7) e não tem para onde fugir. Xeque-mate!'
   }
 ];
 
